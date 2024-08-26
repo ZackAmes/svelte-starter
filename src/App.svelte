@@ -1,21 +1,19 @@
 <script lang="ts">
+  import { createComponentValueStore } from "./componentValueStore";
   import { setupStore } from "./main";
-  import { getComponentValue } from "@dojoengine/recs";
+  import { derived } from "svelte/store";
 
-  // Destructure the objects you need from the store
-  $: ({ client, burnerManager, clientComponents, torii } = $setupStore);
+  $: ({ clientComponents, torii, burnerManager, client } = $setupStore);
 
-  let position;
-  $: {
-    if (clientComponents && clientComponents.Position) {
-      position = getComponentValue(
-        clientComponents.Position,
-        torii.poseidonHash([burnerManager.getActiveAccount()?.address!])
-      );
-    } else {
-      position = null;
-    }
-  }
+  $: entity = derived(setupStore, ($store) =>
+    $store
+      ? torii.poseidonHash([burnerManager.getActiveAccount()?.address!])
+      : undefined
+  );
+
+  $: position = createComponentValueStore(clientComponents.Position, entity);
+
+  $: console.log("Position updated:", $position);
 </script>
 
 <main>
@@ -26,12 +24,17 @@
   {/if}
 
   <button
-    on:click={async () =>
-      await client.actions.spawn({ account: burnerManager.getActiveAccount() })}
-    >spawn</button
+    on:click={async () => {
+      const account = burnerManager.getActiveAccount();
+      if (account) {
+        await client.actions.spawn({ account });
+      } else {
+        console.error("No active account found");
+      }
+    }}>spawn</button
   >
 
   <div>
-    {position.vec.x}
+    {$position?.vec.x}
   </div>
 </main>

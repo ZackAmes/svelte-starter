@@ -8,7 +8,14 @@ import { writable } from "svelte/store";
 export const setupStore = writable<SetupResult>();
 
 async function initApp() {
-  await someAsyncFunction();
+  // Update the store with the setup result
+  setupStore.set(await setup(dojoConfig));
+
+  setupStore.subscribe((value) => {
+    console.log(value);
+  });
+
+  console.log("App initialized");
 
   const app = new App({
     target: document.getElementById("app")!,
@@ -18,11 +25,3 @@ async function initApp() {
 }
 
 export default initApp();
-
-async function someAsyncFunction() {
-  const setupResult = await setup(dojoConfig);
-  console.log("Setup result:", setupResult);
-
-  // Update the store with the setup result
-  setupStore.set(setupResult);
-}
