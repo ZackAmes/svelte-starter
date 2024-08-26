@@ -19,8 +19,6 @@ export function createComponentValueStore<S extends Schema>(
   },
   defaultValue?: ComponentValue<S>
 ) {
-  const store = writable<ComponentValue<S> | undefined>(undefined);
-
   return derived(
     entityStore,
     ($entity, set) => {

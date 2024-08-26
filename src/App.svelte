@@ -12,8 +12,6 @@
   );
 
   $: position = createComponentValueStore(clientComponents.Position, entity);
-
-  $: console.log("Position updated:", $position);
 </script>
 
 <main>
