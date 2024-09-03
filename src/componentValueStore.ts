@@ -28,7 +28,7 @@ export function componentValueStore<S extends Schema>(
   );
 
   return derived(
-    [entityStore, dojoStore],
+    entityStore,
     ($entity, set) => {
       set(
         $entity != null
