@@ -1,11 +1,11 @@
 <script lang="ts">
   import { createComponentValueStore } from "./componentValueStore";
-  import { setupStore } from "./main";
+  import { dojoStore } from "./stores";
   import { derived } from "svelte/store";
 
-  $: ({ clientComponents, torii, burnerManager, client } = $setupStore);
+  $: ({ clientComponents, torii, burnerManager, client } = $dojoStore);
 
-  $: entity = derived(setupStore, ($store) =>
+  $: entity = derived(dojoStore, ($store) =>
     $store
       ? torii.poseidonHash([burnerManager.getActiveAccount()?.address!])
       : undefined
@@ -15,7 +15,7 @@
 </script>
 
 <main>
-  {#if $setupStore}
+  {#if $dojoStore}
     <p>Setup completed</p>
   {:else}
     <p>Setting up...</p>
