@@ -11,14 +11,20 @@ import type {
   Entity,
   Schema,
 } from "@dojoengine/recs";
+import { dojoStore } from "./stores";
 
-export function createComponentValueStore<S extends Schema>(
+export function componentValueStore<S extends Schema>(
   component: Component<S>,
-  entityStore: {
-    subscribe: (callback: (value: Entity | undefined) => void) => () => void;
-  },
+  entityId: Entity | undefined,
   defaultValue?: ComponentValue<S>
 ) {
+
+  let entityStore = derived(dojoStore, ($store) =>
+    $store
+      ? entityId
+      : undefined
+  );
+
   return derived(
     entityStore,
     ($entity, set) => {

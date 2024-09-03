@@ -1,17 +1,22 @@
 <script lang="ts">
-  import { createComponentValueStore } from "./componentValueStore";
+  import type { Entity } from "@dojoengine/recs";
+  import { componentValueStore } from "./componentValueStore";
   import { dojoStore } from "./stores";
-  import { derived } from "svelte/store";
+    import type { Account } from "starknet";
+    import { BurnerManager } from "@dojoengine/create-burner";
+
+  let entityId: Entity;
+  let address: string;
+  let account: Account;
 
   $: ({ clientComponents, torii, burnerManager, client } = $dojoStore);
 
-  $: entity = derived(dojoStore, ($store) =>
-    $store
-      ? torii.poseidonHash([burnerManager.getActiveAccount()?.address!])
-      : undefined
-  );
+  $: if (torii) entityId = torii.poseidonHash([burnerManager.getActiveAccount()?.address!])
 
-  $: position = createComponentValueStore(clientComponents.Position, entity);
+  $: position = componentValueStore(clientComponents.Position, entityId);
+  $: moves = componentValueStore(clientComponents.Moves, entityId);
+
+  $: account = burnerManager.account ? burnerManager.account : burnerManager.masterAccount;
 </script>
 
 <main>
@@ -21,18 +26,83 @@
     <p>Setting up...</p>
   {/if}
 
-  <button
-    on:click={async () => {
-      const account = burnerManager.getActiveAccount();
-      if (account) {
-        await client.actions.spawn({ account });
-      } else {
-        console.error("No active account found");
-      }
-    }}>spawn</button
-  >
+  <button on:click={() => burnerManager?.create()}>
+                {burnerManager?.isDeploying ? "deploying burner" : "create burner"}
+            </button>
 
-  <div>
-    {$position?.vec.x}
-  </div>
+            <div class="card">
+                <div>{`burners deployed: ${burnerManager.list().length}`}</div>
+                <div>
+                    select signer:{" "}
+                    <select bind:value={address}>
+                        {#each burnerManager?.list() as account}
+                                <option value={account.address}>
+                                    {account.address}
+                                </option>
+                        {/each}
+                    </select>
+                </div>
+                <div>
+                    <button on:click={() => burnerManager.clear()}>
+                        Clear burners
+                    </button>
+                    <p>
+                        You will need to Authorise the contracts before you can
+                        use a burner. See readme.
+                    </p>
+                </div>
+            </div>
+
+            <div class="card">
+                <button on:click={() => client.actions.spawn({account})}>Spawn</button>
+                <div>
+                    Moves Left: {moves ? `${$moves.remaining}` : "Need to Spawn"}
+                </div>
+                <div>
+                    Position:{" "}
+                    {position
+                        ? `${$position?.vec.x}, ${$position?.vec.y}`
+                        : "Need to Spawn"}
+                </div>
+
+                <div>{$moves && $moves.last_direction}</div>
+
+            </div>
+
+            <div class="card">
+                <div>
+                    <button
+                        on:click={() =>
+                            position && $position.vec.y > 0
+                                ? client.actions.move({account, direction:{ type: "Up" }})
+                                : console.log("Reach the borders of the world.")
+                        }
+                    >
+                        Move Up
+                    </button>
+                </div>
+                <div>
+                    <button
+                        on:click={() =>
+                            position && $position.vec.x > 0
+                                ? client.actions.move({account, direction: { type: "Left" }})
+                                : console.log("Reach the borders of the world.")
+                        }
+                    >
+                        Move Left
+                    </button>
+                    <button
+                        on:click={() => client.actions.move({account, direction: { type: "Right" }})}
+                    >
+                        Move Right
+                    </button>
+                </div>
+                <div>
+                    <button
+                        on:click={() => client.actions.move({account, direction: { type: "Down" }})}
+                    >
+                        Move Down
+                    </button>
+                </div>
+            </div>
 </main>
