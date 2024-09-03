@@ -4,19 +4,32 @@
   import { dojoStore } from "./stores";
     import type { Account } from "starknet";
     import { BurnerManager } from "@dojoengine/create-burner";
+    import type { ComponentStore } from "./componentValueStore";
 
   let entityId: Entity;
   let address: string;
   let account: Account;
+  let position: ComponentStore;
+  let moves: ComponentStore;
+  
 
   $: ({ clientComponents, torii, burnerManager, client } = $dojoStore);
 
   $: if (torii) entityId = torii.poseidonHash([burnerManager.getActiveAccount()?.address!])
 
-  $: position = componentValueStore(clientComponents.Position, entityId);
-  $: moves = componentValueStore(clientComponents.Moves, entityId);
+  $: if (dojoStore) position = componentValueStore(clientComponents.Position, entityId);
+  $: if (dojoStore) moves = componentValueStore(clientComponents.Moves, entityId);
 
-  $: account = burnerManager.account ? burnerManager.account : burnerManager.masterAccount;
+  $: if (dojoStore) account = burnerManager.account ? burnerManager.account : burnerManager.masterAccount;
+
+  function handleBurnerChange(event: Event) {
+    const target = event.target as HTMLSelectElement;
+    address = target.value;
+    console.log(address)
+    burnerManager.select(address);
+    console.log(burnerManager.getActiveAccount()?.address)
+  }
+
 </script>
 
 <main>
@@ -34,7 +47,7 @@
                 <div>{`burners deployed: ${burnerManager.list().length}`}</div>
                 <div>
                     select signer:{" "}
-                    <select bind:value={address}>
+                    <select on:change={handleBurnerChange}>
                         {#each burnerManager?.list() as account}
                                 <option value={account.address}>
                                     {account.address}
@@ -56,7 +69,7 @@
             <div class="card">
                 <button on:click={() => client.actions.spawn({account})}>Spawn</button>
                 <div>
-                    Moves Left: {moves ? `${$moves.remaining}` : "Need to Spawn"}
+                    Moves Left: {moves ? `${$moves?.remaining}` : "Need to Spawn"}
                 </div>
                 <div>
                     Position:{" "}
